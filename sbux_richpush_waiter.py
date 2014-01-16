@@ -41,6 +41,10 @@ while True:
 
 
         message_user_map = defaultdict(list)
+        message_time_first_created_map = defaultdict(list)
+        message_time_last_created_map = defaultdict(list)
+        message_time_first_sent_map = defaultdict(list)
+        message_time_last_sent_map = defaultdict(list)
 
         f = open(ualoggrep_loc, 'r')
 
@@ -71,25 +75,58 @@ while True:
             # Add these users to the message_id
             message_user_map[message_id].extend(user_ids)
 
+            # Get the timestamp at which the message was first created
+
+            created_at_index = line.find('createdAt=')
+            created_at_start = created_at_index + 11
+            created_at_end = line.find("'", created_at_start)
+
+            message_created_at = line[created_at_start:created_at_end]
+
+            if not message_time_first_created_map[message_id] or message_time_first_created_map[message_id] > message_created_at:
+                message_time_first_created_map[message_id] = message_created_at
+
+            if not message_time_last_created_map[message_id] or message_time_last_created_map[message_id] < message_created_at:
+                message_time_last_created_map[message_id] = message_created_at
+
+            # Get the timestamp at which the message was last sent
+            timestamp_index = line.find("INFO")
+            timestamp_start = timestamp_index - 26
+            timestamp_end = line.find(',', timestamp_start)
+
+            message_timestamp = line[timestamp_start:timestamp_end]
+
+            if not message_time_first_sent_map[message_id] or message_time_first_sent_map[message_id] > message_timestamp:
+                message_time_first_sent_map[message_id] = message_timestamp
+
+            if not message_time_last_sent_map[message_id] or message_time_last_sent_map[message_id] < message_timestamp:
+                message_time_last_sent_map[message_id] = message_timestamp
+
         total = 0
+
         for message_id, user_ids in message_user_map.iteritems():
-            print "Message Id:", message_id, "Send Count:", len(user_ids)
+            print "\n\nMessage Id:", message_id, "Send Count:", len(user_ids)
+            print "Message First Created:", message_time_first_created_map[message_id] , "Message Last Created:" , message_time_last_created_map[message_id], "First sent:", message_time_first_sent_map[message_id], "Last sent:", message_time_last_sent_map[message_id]
             total += len(user_ids)
+
+
+        print "\n\nNow it is " , (time.strftime("%H:%M:%S"))
 
         print "Total Send Count:", total
 
-        if last_richpush_count == total:
-                print "**********\n\n\n REACHED MAX RICHCOUNT \n\n\n **********"
+        if last_richpush_count == total and last_rishpush_count != 0:
+                print "**********\n\n\n REACHED MAX RICHCOUNT \n\n\n**********"
 
                 max_richpush_reached_count += 1
 
                 if max_richpush_reached_count == 2:
-                        print "**********\n\n\n MAX RICHCOUNT OF " , total , " CONFIRMED \n\n\n **********"
+                        print "**********\n\n\n MAX RICHCOUNT OF " , total , " CONFIRMED \n\n\n**********"
                         break
 
         last_richpush_count = total
 
-        print "**********\n\n\n WAITING \n\n\n **********"
+        print "**********\n\n\n WAITING \n\n\n**********"
 
-        time.sleep(1800)
+        time.sleep(1800) #half hour
+
 
